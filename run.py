@@ -1,6 +1,7 @@
 __author__ = "Salton"
 
 import sys
+import socket
 from seed.seed import Seed
 from crawler.crawler import Crawler
 from common.database import Database
@@ -11,6 +12,7 @@ if len(sys.argv) <= 1:
 query = sys.argv[1]
 
 Database.initialize()
+socket.setdefaulttimeout(2)
 # Generate seeds
 seed = Seed.get_seed(query)
 seed.generate_url_seeds_from_google()
@@ -19,7 +21,7 @@ for url in urlList:
     print(url)
 
 # Start Crawler
-crawler = Crawler.get_crawler(urlList, 1, 5)
+crawler = Crawler.get_crawler(urlList, 1, 20)
 crawler.start()
 
 

@@ -32,6 +32,9 @@ class Url(object):
     def set_title(self, title):
         self.title = title
 
+    def set_priority(self, priority):
+        self.priority = priority
+
     def json(self):
         return {
             "priority": self.priority,
