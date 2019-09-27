@@ -190,7 +190,7 @@ class Download(threading.Thread):
                 if not rp.can_fetch(user_agent, url.url):
                     return
             except Exception:
-                pass
+                return
                 # logging.info(Exception)
 
             # download page
