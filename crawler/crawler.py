@@ -100,6 +100,7 @@ class Crawler(object):
             for thread in thread_pool:
                 thread.join()
 
+            # Start rank
             rank_thread_pool = []
             print("Start ranking")
 
@@ -112,6 +113,8 @@ class Crawler(object):
                 url = rank_queue.get()
                 splited_url = url.url.split('/')
                 site = splited_url[2]
+
+                # Use the times of a page occurrences in the sub graph to calculate the priority score
                 dict_lock.acquire()
                 try:
                     if url.url not in hash_map:
@@ -125,6 +128,7 @@ class Crawler(object):
                 finally:
                     dict_lock.release()
 
+                # Use the times of the same site appeared to calculate the novelty score.
                 site_lock.acquire()
                 try:
                     if site in site_count_map:
@@ -141,6 +145,8 @@ class Crawler(object):
             global_count = count_queue.get()
             count_queue.put(global_count)
             time.sleep(1)
+
+        # Print the statistics
         end_time = datetime.datetime.now()
         print("Crawler started from:   ", start_time)
         print("Crawler finished in:    ", end_time)
@@ -178,7 +184,6 @@ class Download(threading.Thread):
         rp.set_url(robot_url)
         try:
             # check robot.txt
-            """
             try:
                 rp.read()
                 user_agent = 'GoodCrawler'
@@ -186,7 +191,7 @@ class Download(threading.Thread):
                     return
             except Exception:
                 pass
-            """
+                # logging.info(Exception)
 
             # download page
             response = urlopen(url.url, timeout=2)
@@ -194,6 +199,8 @@ class Download(threading.Thread):
             response_code = response.getcode()
             size = response.info()['Content-Length']
             response.close()
+
+            # parse
             soup = BeautifulSoup(html, features='lxml')
             if soup.find('h1') is None:
                 title = "default"
@@ -216,10 +223,11 @@ class Download(threading.Thread):
             print('count: ', temp_count, '    depth:', url.depth, "    priority:", url.priority, title,
                   '    url: ', url.url, '   size:', size, '  Response_Code:',
                   response_code, '    time: ', url.get_time())
-            Database.insert("parisnr2", url.json())
+            Database.insert("test", url.json())
 
             sub_urls = soup.find_all("a", {"href": re.compile("https://.*?")})
 
+            # update the subgraph of network discovered to bfs Queue and Rank Queue
             for url_string in sub_urls:
                 temp_url = Url.get_url(50, url_string["href"], url.depth + 1)
                 temp_site = url_string["href"].split('/')[2]
@@ -238,6 +246,7 @@ class Download(threading.Thread):
                     dict_lock.release()
                 rank_queue.put(temp_url)
                 work_queue.put(temp_url)
+
             # synchronize data to the site-count map and hash map
             site_lock.acquire()
             try:
