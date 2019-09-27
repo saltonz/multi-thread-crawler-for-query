@@ -82,13 +82,13 @@ class Crawler(object):
                 while not bfs_queue.empty():
                     temp_url = bfs_queue.get()
                     if temp_url.url not in bloom_filter:
+                        bloom_filter.add(temp_url.url)
                         new_thread = Download(temp_url, bfs_queue, count_queue,
                                               rank_queue, hash_map, site_count_map, self.max_num)
                         thread_pool.append(new_thread)
-                        bloom_filter.add(temp_url.url)
                         new_thread.start()
             else:
-                while bfs_queue.qsize() > temp_size/2 and len(thread_pool) < 1000:
+                while bfs_queue.qsize() > temp_size/2 and len(thread_pool) < 2000:
                     temp_url = bfs_queue.get()
                     if temp_url.url not in bloom_filter:
                         new_thread = Download(temp_url, bfs_queue, count_queue,
@@ -178,18 +178,27 @@ class Download(threading.Thread):
         rp.set_url(robot_url)
         try:
             # check robot.txt
-            rp.read()
-            user_agent = 'GoodCrawler'
-            if not rp.can_fetch(user_agent, url.url):
-                logging.info("url.url is not allowed to crawl by robot.txt")
-                return
+            """
+            try:
+                rp.read()
+                user_agent = 'GoodCrawler'
+                if not rp.can_fetch(user_agent, url.url):
+                    return
+            except Exception:
+                pass
+            """
 
             # download page
             response = urlopen(url.url, timeout=2)
             html = response.read().decode('utf-8')
+            response_code = response.getcode()
+            size = response.info()['Content-Length']
             response.close()
             soup = BeautifulSoup(html, features='lxml')
-            title = soup.find('h1').get_text()
+            if soup.find('h1') is None:
+                title = "default"
+            else:
+                title = soup.find('h1').get_text()
 
             # upgrade the global id
             temp_count = count_queue.get()
@@ -201,10 +210,13 @@ class Download(threading.Thread):
             url.set_time(datetime.datetime.now())
             url.set_id(temp_count)
             url.set_title(title)
+            url.set_reponse_code(response_code)
+            url.set_size(size)
 
             print('count: ', temp_count, '    depth:', url.depth, "    priority:", url.priority, title,
-                  '    url: ', url.url, '    time: ', url.get_time())
-            Database.insert("brooklyn-2", url.json())
+                  '    url: ', url.url, '   size:', size, '  Response_Code:',
+                  response_code, '    time: ', url.get_time())
+            Database.insert("parisnr2", url.json())
 
             sub_urls = soup.find_all("a", {"href": re.compile("https://.*?")})
 
@@ -242,14 +254,18 @@ class Download(threading.Thread):
             finally:
                 dict_lock.release()
         except socket.gaierror:
-            logging.info("Encountered gai error")
+            # logging.info("Encountered gai error")
+            pass
         except HTTPError as err:
-            logging.info("Encountered exception on url: " + url.url)
-            logging.info("Error Info: ", err)
+            # logging.info("Encountered exception on url: " + url.url)
+            # logging.info("Error Info: ", err)
+            pass
         except SSLError as err:
-            logging.info("Encountered SSL Error:", err)
+            # logging.info("Encountered SSL Error:", err)
+            pass
         except Exception as e:
-            logging.info(e)
+            # print(url.url, e)
+            pass
 
 
 class Rank(threading.Thread):

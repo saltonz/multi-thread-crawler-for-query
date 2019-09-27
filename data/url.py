@@ -8,7 +8,9 @@ class Url(object):
         self.depth = depth
         self.time_stamp = time.localtime()
         self.id = 0
+        self.response_code = 0
         self.title = ""
+        self.size = 0
 
     def __repr__(self):
         return "<Crawler {}>".format(self.url)
@@ -35,6 +37,12 @@ class Url(object):
     def set_priority(self, priority):
         self.priority = priority
 
+    def set_reponse_code(self, response_code):
+        self.response_code = response_code
+
+    def set_size(self, size):
+        self.size = size
+
     def json(self):
         return {
             "priority": self.priority,
@@ -43,4 +51,6 @@ class Url(object):
             "timestamp": self.time_stamp,
             "id": self.id,
             "title": self.title,
+            "response_code": self.response_code,
+            "size": self.size,
         }

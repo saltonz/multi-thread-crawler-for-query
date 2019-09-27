@@ -9,6 +9,9 @@ from common.database import Database
 if len(sys.argv) <= 1:
     print('No query input')
     exit()
+if len(sys.argv) > 2:
+    print('Too many parameters, please run as [python run.py "your query"]')
+    exit()
 query = sys.argv[1]
 
 Database.initialize()
@@ -21,7 +24,7 @@ for url in urlList:
     print(url)
 
 # Start Crawler
-crawler = Crawler.get_crawler(urlList, 1, 20)
+crawler = Crawler.get_crawler(urlList, 1, 20000)
 crawler.start()
 
 
