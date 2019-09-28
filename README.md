@@ -9,7 +9,11 @@
 ### Usage
 
 ```bash
-python run.py "[Your query]"
+python run.py "[Your Query]" [max_number of pages you want to crawl]
+
+More than two parameters is invalid.
+
+e.g: python run.py "Brooklyn parks" 1000
 ```
 
 ### Env

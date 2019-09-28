@@ -23,6 +23,9 @@ dict_lock = RLock()
 # initialize the lock for site_count_map
 site_lock = RLock()
 
+# suffix to exclude in urls
+not_suffix = ['jpg', 'pdf', 'png', 'gif', 'js']
+
 
 class Crawler(object):
     def __init__(self, seed_list, _id, max_num):
@@ -72,7 +75,7 @@ class Crawler(object):
                                            mode=ScalableBloomFilter.LARGE_SET_GROWTH)
 
         # main loop of crawler
-        while global_count < self.max_num:
+        while global_count < self.max_num and not bfs_queue.empty():
             print("Iteration Started")
 
             # start new threads to download pages and add url object to bfs_queue and rank_queue
@@ -105,11 +108,11 @@ class Crawler(object):
             print("Start ranking")
 
             while not rank_queue.empty():
-                """
-                new_thread = Rank(rank_queue.get(), hash_map, site_count_map)
-                rank_thread_pool.append(new_thread)
-                new_thread.start()
-                """
+                
+                # new_thread = Rank(rank_queue.get(), hash_map, site_count_map)
+                # rank_thread_pool.append(new_thread)
+                # new_thread.start()
+                
                 url = rank_queue.get()
                 splited_url = url.url.split('/')
                 site = splited_url[2]
@@ -144,14 +147,14 @@ class Crawler(object):
 
             global_count = count_queue.get()
             count_queue.put(global_count)
-            time.sleep(1)
+            time.sleep(2)
 
         # Print the statistics
         end_time = datetime.datetime.now()
         print("Crawler started from:   ", start_time)
         print("Crawler finished in:    ", end_time)
         print("Time Consumed: ", end_time - start_time)
-        print("Number of Sites crawled: ", len(site_count_map))
+        print("Number of Sites encountered: ", len(site_count_map))
         print("Number of pages crawled: ", self.max_num)
 
 
@@ -229,6 +232,11 @@ class Download(threading.Thread):
 
             # update the subgraph of network discovered to bfs Queue and Rank Queue
             for url_string in sub_urls:
+                # To exclude suffix such as "pdf, gif"
+                suffix = url_string["href"].split('.')[-1]
+                if suffix in not_suffix:
+                    continue
+
                 temp_url = Url.get_url(50, url_string["href"], url.depth + 1)
                 temp_site = url_string["href"].split('/')[2]
                 site_lock.acquire()
